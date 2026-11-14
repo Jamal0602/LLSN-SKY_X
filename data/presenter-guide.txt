@@ -1,0 +1,39 @@
+SELENE — PRESENTER AND DEMO GUIDE
+
+START
+1. Open a terminal in the project folder.
+2. Run: npm run dev
+3. Open the local URL printed by Vite (normally http://localhost:5173).
+4. Keep network access available. JPL Horizons and the NASA LOLA elevation sample are requested live through the Vite proxy.
+
+LIVE DEMO FLOW
+1. Rotate the lunar globe by dragging. Scroll or pinch to zoom. Use Reset view to return to the overview.
+2. Choose a NASA Moon Trek CLPS target from the site selector. The displayed latitude and longitude come from the NASA CLPS site layer.
+3. Change the date and time in UTC, then press Refresh ephemeris. JPL Horizons returns a 30-day, hourly observer table for the selected lunar site.
+4. Scrub or play the timeline. Compare Sun and Earth azimuth/elevation at each hour. The Sun disk percentage is based on the geometric horizon; it is not terrain-shadow corrected.
+5. Read the LOLA elevation value and the source/status badge. The current point sample is from NASA Moon Trek's 100 m/pixel south-polar DEM for polar sites or global LOLA DEM elsewhere.
+6. Search the mission archive from the supplied LLSN brief. Mission records without a surface coordinate in the NASA layer remain unlocated; they are not assigned invented map pins.
+7. Press Animate descent to show the lander moving to the selected coordinate. This path is schematic and is not actual mission telemetry.
+8. Use the Moon Trek, LROC QuickMap, JPL Horizons, and CSA links for deeper source analysis.
+
+CUSTOM COORDINATES
+Enter latitude and east-positive longitude in degrees. South latitudes are negative; west longitudes may be entered as negative values. Apply the coordinates before refreshing Horizons and LOLA.
+
+DATA AND CONFIDENCE
+- Sun/Earth observer azimuth and elevation: live JPL Horizons API, Moon-centered geodetic observer, hourly samples.
+- Globe texture: NASA Moon Trek, LRO WAC global mosaic.
+- Site elevation: NASA Moon Trek / LRO LOLA DEM point sample. This is elevation, not landing-site slope or hazard assessment.
+- Historic mission names/types/years: supplied LLSN mission document. Coordinates are shown only when matched to a NASA Moon Trek landing, impact, rover, or CLPS record.
+- Resource context: payload/mission objective only. The prototype does not report a measured water-ice abundance map.
+- Terrain clearance: geometric horizon values are not terrain-horizon clearance. A LOLA radial horizon extraction is still required.
+
+TROUBLESHOOTING
+- If JPL shows an error, check network access and try Refresh ephemeris. The UI does not replace failed live requests with synthetic values.
+- If LOLA is unavailable, the elevation field reports unavailable; do not infer a zero elevation.
+- If the app is deployed as static files, configure a same-origin API proxy for /api/horizons.api and /api/moon-dem. The included proxy is for Vite development.
+
+SOURCE LINKS
+NASA Moon Trek: https://trek.nasa.gov/moon/
+LROC QuickMap: https://quickmap.lroc.im-ldi.com/
+JPL Horizons: https://ssd.jpl.nasa.gov/horizons/
+Canadian Space Agency Moon exploration: https://www.asc-csa.gc.ca/eng/astronomy/moon-exploration/

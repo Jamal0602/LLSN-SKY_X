@@ -1,0 +1,33 @@
+LUNAR LANDING SITE NAVIGATOR
+NASA Space Apps Challenge — 5-minute pitch
+
+SLIDE 1 — A MAP THAT THINKS IN TIME
+Visual: the rotating lunar globe with a highlighted landing site.
+Speaker:
+"SELENE turns lunar site selection into a shared, visual planning task. Rotate the Moon, choose a documented landing or CLPS target, and see the Sun and Earth from that exact lunar location and time."
+
+SLIDE 2 — WHY THE SOUTH POLE IS HARD
+Visual: south-pole terrain, low Sun angle, and Earth visibility indicators.
+Speaker:
+"Near the lunar poles, small changes in position and date can change illumination and direct-to-Earth visibility. A geometric view alone is not enough: local relief matters, and an apparently visible body may be hidden by terrain."
+
+SLIDE 3 — REAL SOURCES, CLEAR PROVENANCE
+Visual: source badges for JPL Horizons, NASA Moon Trek LRO/WAC, LOLA, and the mission archive.
+Speaker:
+"The live Sun and Earth azimuth and elevation come from JPL Horizons observer ephemerides for the selected lunar coordinates. The globe texture and elevation sample come from NASA Moon Trek's LRO products. The historical mission list is transcribed from our supplied LLSN brief; mapped coordinates are identified with their NASA Moon Trek source."
+
+SLIDE 4 — A WORKING SCENARIO
+Visual: change a site, edit UTC date/time, scrub the 30-day timeline, then rotate the globe.
+Speaker:
+"A planner can inspect a CLPS target or a mission landing site, enter custom coordinates, and scrub a 30-day ephemeris window. The animation brings a lander to the selected real surface coordinate. The route is a visualization aid, not a reconstruction of a flown trajectory."
+
+SLIDE 5 — WHAT WE WILL VALIDATE NEXT
+Visual: terrain and resources callouts with confidence labels.
+Speaker:
+"SELENE separates measured data from planning context. LOLA elevation is a real sampled value; potential polar volatiles are a science objective, not a measured abundance in this prototype. The next validation step is a DEM-derived local horizon and a sourced resource layer before any mission-grade clearance claim."
+
+DEMO CLOSE
+"SELENE makes the data easier to compare without hiding where it came from—or where uncertainty remains."
+
+PRESENTATION NOTE
+The live Horizons and Moon Trek requests use the local Vite development proxy. A deployed build needs an equivalent same-origin server/API proxy. The descent path is illustrative. This prototype is not for flight or mission-critical decisions.
