@@ -9,14 +9,16 @@ START
 LIVE DEMO FLOW
 1. Rotate the lunar globe by dragging. Scroll or pinch to zoom. Use Reset view to return to the overview.
 2. Choose a NASA Moon Trek CLPS target from the site selector. The displayed latitude and longitude come from the NASA CLPS site layer.
-3. Change the date and time in UTC, then press Refresh ephemeris. JPL Horizons returns a 30-day, hourly observer table for the selected lunar site.
-4. Scrub or play the timeline. Compare Sun and Earth azimuth/elevation at each hour. The Sun disk percentage is based on the geometric horizon; it is not terrain-shadow corrected.
-5. Read the LOLA elevation value and the source/status badge. The current point sample is from NASA Moon Trek's 100 m/pixel south-polar DEM for polar sites or global LOLA DEM elsewhere.
-6. Search the mission archive from the supplied LLSN brief. Mission records without a surface coordinate in the NASA layer remain unlocated; they are not assigned invented map pins.
-7. Press Animate descent to show the lander moving to the selected coordinate. This path is schematic and is not actual mission telemetry.
-8. Use the Moon Trek, LROC QuickMap, JPL Horizons, and CSA links for deeper source analysis.
-9. Review the upcoming lunar launches panel. Dates and precision come from Launch Library 2 and are estimates, not predictions.
-10. Select any mission to view its labeled schematic route and use the NASA media links. Download the media source CSV from the footer.
+3. Click the LRO WAC 2D map to apply a custom coordinate, or use the latitude/longitude fields. Map clicks refresh the selected site's live data.
+4. Change the date and time in UTC, then press Refresh ephemeris. JPL Horizons returns a 30-day, hourly observer table for the selected lunar site.
+5. Scrub or play the timeline. Compare Sun and Earth azimuth/elevation at each hour. The Sun disk percentage is based on the geometric horizon; it is not terrain-shadow corrected.
+6. Read the LOLA elevation value and the source/status badge. The current point sample is from NASA Moon Trek's 100 m/pixel south-polar DEM for polar sites or global LOLA DEM elsewhere.
+7. Search the mission archive from the supplied LLSN brief. Mission records without a surface coordinate in the NASA layer remain unlocated; they are not assigned invented map pins.
+8. Press Animate descent to show the lander moving to the selected coordinate. This path is schematic and is not actual mission telemetry.
+9. Download the site-condition summary for the active coordinate and UTC hour.
+10. Use the Moon Trek, LROC QuickMap, JPL Horizons, and CSA links for deeper source analysis.
+11. Review the upcoming lunar launches panel. Dates and precision come from Launch Library 2 and are estimates, not predictions.
+12. Select any mission to view its labeled schematic route and use the NASA media links. Download the media source CSV from the footer.
 
 CUSTOM COORDINATES
 Enter latitude and east-positive longitude in degrees. South latitudes are negative; west longitudes may be entered as negative values. Apply the coordinates before refreshing Horizons and LOLA.

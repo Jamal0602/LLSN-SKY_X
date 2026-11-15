@@ -8,7 +8,6 @@ import './App.css'
 
 const MOON_RADIUS_KM = 1737.4
 const PLANNING_HOURS = 720
-const launchSearchTerms = ['lunar', 'moon', 'artemis']
 const initialTarget = candidateSites.find((site) => site.id === 'shackleton-connecting-ridge')
 
 function utcInputValue(date) {
@@ -57,9 +56,9 @@ function observerRows(payload, label) {
   if (!table) throw new Error(`JPL Horizons returned no ${label} ephemeris rows.`)
   const rows = table.split(/\r?\n/).flatMap((line) => {
     if (!/^\s*\d{4}-[A-Z][a-z]{2}-\d{2}/.test(line)) return []
-    const values = line.trim().replace(/\s+\*\s+/, ' ').split(/\s+/)
-    const azimuth = Number(values[2])
-    const elevation = Number(values[3])
+    const angles = line.trim().split(/\s+/).slice(2).map(Number).filter(Number.isFinite)
+    const azimuth = angles[0]
+    const elevation = angles[1]
     if (!Number.isFinite(azimuth) || !Number.isFinite(elevation)) return []
     return [{ azimuth, elevation }]
   })
@@ -108,21 +107,16 @@ async function requestLolaElevation(target, signal) {
 }
 
 async function requestUpcomingLaunches(signal) {
-  const responses = await Promise.all(launchSearchTerms.map((term) => (
-    fetch(`/api/launch-library/launch/upcoming/?limit=100&search=${encodeURIComponent(term)}`, { signal })
-  )))
-  const payloads = await Promise.all(responses.map(async (response) => {
-    if (!response.ok) throw new Error(`Launch Library request failed (${response.status}).`)
-    return response.json()
-  }))
-  const launches = payloads.flatMap((payload) => {
-    if (!Array.isArray(payload.results)) throw new Error('Launch Library returned an unexpected response.')
-    return payload.results
-  })
-  const uniqueLaunches = new Map(launches.map((launch) => [launch.id, launch]))
+  const response = await fetch('/api/launch-library/launch/upcoming/?limit=100&search=lunar', { signal })
+  if (!response.ok) {
+    const detail = response.status === 429 ? ' The provider is rate-limiting requests; retry in a few minutes.' : ''
+    throw new Error(`Launch Library request failed (${response.status}).${detail}`)
+  }
+  const payload = await response.json()
+  if (!Array.isArray(payload.results)) throw new Error('Launch Library returned an unexpected response.')
   const now = Date.now()
 
-  return [...uniqueLaunches.values()]
+  return [...new Map(payload.results.map((launch) => [launch.id, launch])).values()]
     .filter((launch) => {
       const description = `${launch.name} ${launch.mission?.name || ''} ${launch.mission?.orbit?.name || ''}`.toLowerCase()
       return launch.net && new Date(launch.net).getTime() >= now
@@ -130,6 +124,99 @@ async function requestUpcomingLaunches(signal) {
     })
     .sort((first, second) => new Date(first.net) - new Date(second.net))
     .slice(0, 8)
+}
+
+function lunarMapPosition(latitude, longitude) {
+  return {
+    left: `${((longitude + 180) / 360) * 100}%`,
+    top: `${((90 - latitude) / 180) * 100}%`,
+  }
+}
+
+function LunarCoordinateMap({ target, sites, missionData, onSelectCoordinates, onSelectTarget }) {
+  const points = [
+    ...sites.map((site) => ({ ...site, selectionId: site.id, category: 'CLPS' })),
+    ...missionData
+      .filter((mission) => Number.isFinite(mission.lat) && Number.isFinite(mission.lon))
+      .map((mission) => ({ ...mission, selectionId: `mission-${mission.id}`, category: 'MISSION' })),
+  ]
+
+  const selectMapCoordinates = (event) => {
+    const bounds = event.currentTarget.getBoundingClientRect()
+    const longitude = ((event.clientX - bounds.left) / bounds.width) * 360 - 180
+    const latitude = 90 - ((event.clientY - bounds.top) / bounds.height) * 180
+    onSelectCoordinates(
+      Math.round(Math.max(-90, Math.min(90, latitude)) * 100) / 100,
+      Math.round(Math.max(-180, Math.min(180, longitude)) * 100) / 100,
+    )
+  }
+
+  const adjustMapCoordinates = (event) => {
+    if (event.target !== event.currentTarget) return
+    const increments = {
+      ArrowUp: [1, 0],
+      ArrowDown: [-1, 0],
+      ArrowLeft: [0, -1],
+      ArrowRight: [0, 1],
+    }
+    const increment = increments[event.key]
+    if (!increment) return
+    event.preventDefault()
+    onSelectCoordinates(
+      Math.max(-90, Math.min(90, target.lat + increment[0])),
+      Math.max(-180, Math.min(180, target.lon + increment[1])),
+    )
+  }
+
+  return (
+    <section className="coordinate-map-panel" aria-labelledby="coordinate-map-title">
+      <div className="coordinate-map-header">
+        <div>
+          <div className="panel-kicker"><span>02</span> 2D COORDINATE MAP</div>
+          <p id="coordinate-map-title">Click a point to move the active site and refresh its data.</p>
+        </div>
+        <span className="map-coordinate-readout">{formatCoordinate(target.lat, true)} · {formatCoordinate(target.lon, false)}</span>
+      </div>
+      <div className="coordinate-map-body">
+        <div
+          className="coordinate-map-surface"
+          style={{ backgroundImage: `linear-gradient(rgba(7, 10, 18, .24), rgba(7, 10, 18, .24)), url("${moonTextureUrl}")` }}
+          role="group"
+          aria-label="Interactive equirectangular lunar map. Click to set custom coordinates; use arrow keys when the map is focused to move one degree."
+          tabIndex={0}
+          onClick={selectMapCoordinates}
+          onKeyDown={adjustMapCoordinates}
+        >
+          <div className="coordinate-map-grid" aria-hidden="true" />
+          <div className="coordinate-map-lat-labels" aria-hidden="true"><span>90°N</span><span>0°</span><span>90°S</span></div>
+          {points.map((point) => (
+            <button
+              key={point.selectionId}
+              type="button"
+              className={`coordinate-map-marker ${point.category.toLowerCase()}${target.id === point.selectionId ? ' active' : ''}`}
+              style={lunarMapPosition(point.lat, point.lon)}
+              title={`${point.name} · ${point.lat.toFixed(2)}°, ${point.lon.toFixed(2)}° east`}
+              aria-label={`Select ${point.category} target ${point.name} at ${point.lat.toFixed(2)} degrees latitude, ${point.lon.toFixed(2)} degrees east longitude`}
+              onClick={(event) => {
+                event.stopPropagation()
+                onSelectTarget(point.selectionId)
+              }}
+            >
+              <span />
+            </button>
+          ))}
+          <span className="coordinate-map-active" style={lunarMapPosition(target.lat, target.lon)} aria-hidden="true" />
+          <div className="coordinate-map-lon-labels" aria-hidden="true"><span>180°W</span><span>90°W</span><span>0°</span><span>90°E</span><span>180°E</span></div>
+        </div>
+      </div>
+      <div className="coordinate-map-legend">
+        <span><i className="map-key clps" /> CLPS TARGET</span>
+        <span><i className="map-key mission" /> MISSION RECORD</span>
+        <span><i className="map-key active" /> ACTIVE SITE</span>
+        <span className="coordinate-map-source">LRO WAC · EQUIRECTANGULAR</span>
+      </div>
+    </section>
+  )
 }
 
 function formatLaunchDate(launch) {
@@ -369,7 +456,7 @@ function MoonGlobe({ target, sites, missionData, sun, earth, landingRun, isAutoR
     const renderFrame = (now) => {
       frame = window.requestAnimationFrame(renderFrame)
       if (state.animation) {
-        const progress = Math.min((now - state.animation.start) / state.animation.duration, 1)
+        const progress = Math.max(0, Math.min((now - state.animation.start) / state.animation.duration, 1))
         const eased = 1 - ((1 - progress) ** 2)
         state.animation.lander.position.copy(state.animation.curve.getPoint(eased))
         const direction = state.animation.curve.getTangent(eased).normalize()
@@ -543,6 +630,77 @@ function ElevationChart({ sunRows, earthRows, hour }) {
   )
 }
 
+function SiteReport({ target, selectedDate, sun, earth, elevation, ephemerisStatus, elevationStatus }) {
+  const visibility = sun ? Math.round(solarDiskFraction(sun.elevation) * 100) : null
+  const sunSummary = sun
+    ? `${sun.azimuth.toFixed(2)}° azimuth, ${sun.elevation >= 0 ? '+' : ''}${sun.elevation.toFixed(2)}° elevation; ${visibility}% geometric solar-disk visibility.`
+    : 'Live Sun data is not available for this site and time.'
+  const earthSummary = earth
+    ? `${earth.azimuth.toFixed(2)}° azimuth, ${earth.elevation >= 0 ? '+' : ''}${earth.elevation.toFixed(2)}° elevation; ${earth.elevation > 0 ? 'above' : 'below'} the geometric horizon.`
+    : 'Live Earth data is not available for this site and time.'
+  const elevationSummary = elevationStatus === 'live'
+    ? `${elevation.meters.toLocaleString(undefined, { maximumFractionDigits: 1 })} m from ${elevation.layer}.`
+    : 'NASA LOLA elevation sample is not available.'
+
+  const downloadReport = () => {
+    const report = [
+      'LLSN-SKY_X — LUNAR SITE CONDITION SUMMARY',
+      `Generated: ${new Date().toISOString()}`,
+      `Active site: ${target.name}`,
+      `Coordinates: ${target.lat.toFixed(4)}° latitude, ${target.lon.toFixed(4)}° east longitude`,
+      `Selected epoch: ${selectedDate.toISOString()} UTC`,
+      `Sun (JPL Horizons): ${sunSummary}`,
+      `Earth (JPL Horizons): ${earthSummary}`,
+      `LOLA elevation (NASA Moon Trek): ${elevationSummary}`,
+      `JPL data status: ${ephemerisStatus}. Mission archive coverage: ${missions.length} records; ${candidateSites.length} CLPS targets.`,
+      'Data sources: JPL Horizons DE441; NASA Moon Trek LRO WAC and LOLA; supplied lunar mission archive.',
+      'Limits: geometric visibility is not terrain-cleared line of sight; LOLA elevation is not slope or hazard assessment; volatile context is not measured resource abundance; this summary is not for flight or mission-critical decisions.',
+    ].join('\r\n')
+    const url = URL.createObjectURL(new Blob([report], { type: 'text/plain;charset=utf-8' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'llsn-sky_x-site-summary.txt'
+    link.click()
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+
+  return (
+    <section className="site-report-panel" aria-labelledby="site-report-title">
+      <div className="site-report-header">
+        <div>
+          <div className="panel-kicker"><span>07</span> SITE REPORT & DATA SUMMARY</div>
+          <p id="site-report-title">A source-aware snapshot for the active coordinates and selected UTC hour.</p>
+        </div>
+        <button type="button" onClick={downloadReport}>DOWNLOAD SUMMARY</button>
+      </div>
+      <div className="site-report-grid">
+        <div className="site-report-target">
+          <small>ACTIVE SITE</small>
+          <strong>{target.name}</strong>
+          <span>{formatCoordinate(target.lat, true)} · {formatCoordinate(target.lon, false)}</span>
+          <span>{formatUtc(selectedDate)} UTC</span>
+        </div>
+        <div className="site-report-metric">
+          <small>SUN · JPL HORIZONS</small>
+          <span>{sunSummary}</span>
+        </div>
+        <div className="site-report-metric">
+          <small>EARTH · JPL HORIZONS</small>
+          <span>{earthSummary}</span>
+        </div>
+        <div className="site-report-metric">
+          <small>LOLA · NASA MOON TREK</small>
+          <span>{elevationSummary}</span>
+        </div>
+      </div>
+      <div className="site-report-footnote">
+        <span>Coverage: {candidateSites.length} CLPS targets · {missions.length} mission records · 720 hourly samples.</span>
+        <span>Geometric horizon only; no terrain-clearance or measured volatile-abundance claim.</span>
+      </div>
+    </section>
+  )
+}
+
 function App() {
   const [target, setTarget] = useState(initialTarget)
   const [latitudeInput, setLatitudeInput] = useState(String(initialTarget.lat))
@@ -659,14 +817,15 @@ function App() {
       setLatitudeInput(String(next.lat))
       setLongitudeInput(String(next.lon))
       setHour(0)
+      setPlaying(false)
+      setLandingStatus('')
       setMissionNotice('')
     }
   }
 
-  const applyCustomCoordinates = (event) => {
-    event.preventDefault()
-    const lat = Number(latitudeInput)
-    const lon = Number(longitudeInput)
+  const chooseCustomCoordinates = (latitude, longitude) => {
+    const lat = Number(latitude)
+    const lon = Number(longitude)
     if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
       setCustomError('Latitude must be between −90° and +90°.')
       return
@@ -676,9 +835,19 @@ function App() {
       return
     }
     setCustomError('')
+    setLatitudeInput(String(lat))
+    setLongitudeInput(String(lon))
     setTarget({ id: `custom-${lat}-${lon}`, name: 'Custom coordinates', lat, lon, payload: 'No mission payload record for custom coordinates.' })
     setHour(0)
+    setPlaying(false)
+    setLandingStatus('')
+    setMissionId('')
     setMissionNotice('')
+  }
+
+  const applyCustomCoordinates = (event) => {
+    event.preventDefault()
+    chooseCustomCoordinates(latitudeInput, longitudeInput)
   }
 
   const chooseMission = (mission) => {
@@ -694,6 +863,7 @@ function App() {
   }
 
   const runDescent = () => {
+    setPlaying(false)
     setLandingRun((run) => run + 1)
     setLandingStatus('DESCENT ANIMATION')
     window.clearTimeout(descentTimeout.current)
@@ -770,6 +940,13 @@ function App() {
             <span className={landingStatus ? 'route-state active' : 'route-state'} />
             {landingStatus || 'Descent route is illustrative; it is not reconstructed flight telemetry.'}
           </div>
+          <LunarCoordinateMap
+            target={target}
+            sites={candidateSites}
+            missionData={missions}
+            onSelectCoordinates={chooseCustomCoordinates}
+            onSelectTarget={chooseTarget}
+          />
         </div>
 
         <aside className="control-panel">
@@ -796,7 +973,7 @@ function App() {
           </section>
 
           <section className="conditions-section">
-            <div className="section-title"><span className="panel-kicker"><span>02</span> LIVE SITE CONDITIONS</span><span className={`source-pill ${ephemerisStatus}`}>{ephemerisStatus === 'live' ? 'JPL / DE441' : ephemerisStatus.toUpperCase()}</span></div>
+            <div className="section-title"><span className="panel-kicker"><span>03</span> LIVE SITE CONDITIONS</span><span className={`source-pill ${ephemerisStatus}`}>{ephemerisStatus === 'live' ? 'JPL / DE441' : ephemerisStatus.toUpperCase()}</span></div>
             {ephemerisStatus === 'error' && (
               <div className="data-error" role="alert">
                 <strong>Ephemeris unavailable</strong>
@@ -820,7 +997,7 @@ function App() {
           </section>
 
           <section className="site-data-section">
-            <div className="panel-kicker"><span>03</span> LOLA & RESOURCE CONTEXT</div>
+            <div className="panel-kicker"><span>04</span> LOLA & RESOURCE CONTEXT</div>
             <div className="site-data-row">
               <span className="data-icon">⌁</span>
               <div><small>SURFACE ELEVATION · NASA LOLA</small><strong>{elevationStatus === 'live' ? `${elevation.meters.toLocaleString(undefined, { maximumFractionDigits: 1 })} m` : elevationStatus === 'loading' ? 'Sampling DEM…' : 'Unavailable'}</strong></div>
@@ -835,7 +1012,7 @@ function App() {
           </section>
 
           <section className="mission-focus">
-            <div className="panel-kicker"><span>04</span> LLSN MISSION ARCHIVE</div>
+            <div className="panel-kicker"><span>05</span> LLSN MISSION ARCHIVE</div>
             <div className="mission-select-row">
               <label className="visually-hidden" htmlFor="mission-select">Select mission from supplied LLSN brief</label>
               <select id="mission-select" value={missionId} onChange={(event) => {
@@ -872,9 +1049,19 @@ function App() {
         onRetry={() => setLaunchRefreshId((id) => id + 1)}
       />
 
+      <SiteReport
+        target={target}
+        selectedDate={selectedDate}
+        sun={sun}
+        earth={earth}
+        elevation={elevation}
+        ephemerisStatus={ephemerisStatus}
+        elevationStatus={elevationStatus}
+      />
+
       <section className="timeline-panel">
         <div className="timeline-header">
-          <div><div className="panel-kicker"><span>05</span> LIVE EPHEMERIS TIMELINE</div><p>JPL observer solutions · hourly samples · 30-day window</p></div>
+          <div><div className="panel-kicker"><span>08</span> LIVE EPHEMERIS TIMELINE</div><p>JPL observer solutions · hourly samples · 30-day window</p></div>
           <div className="epoch-picker">
             <label htmlFor="epoch-input">START EPOCH / UTC</label>
             <input id="epoch-input" type="datetime-local" value={startTime} onChange={(event) => { setStartTime(event.target.value); setHour(0) }} />
@@ -910,7 +1097,7 @@ function App() {
       </section>
 
       <details className="archive-panel" open>
-        <summary><span><i>07</i> MISSION ARCHIVE FROM LLSN BRIEF</span><strong>{missions.length} records <b>⌄</b></strong></summary>
+        <summary><span><i>09</i> MISSION ARCHIVE FROM LLSN BRIEF</span><strong>{missions.length} records <b>⌄</b></strong></summary>
         <div className="archive-toolbar">
           <p>Names, years, agencies, and types are transcribed from <em>LLSN - SKY_X (2).pdf</em>. Coordinates are included only when matched to a NASA Moon Trek landing, impact, rover, or CLPS record.</p>
           <label><span className="visually-hidden">Filter missions</span><input value={missionSearch} onChange={(event) => setMissionSearch(event.target.value)} placeholder="Filter mission, agency, year…" /></label>
