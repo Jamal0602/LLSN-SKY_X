@@ -1700,3 +1700,305 @@ summary:focus-visible {
     flex-wrap: wrap;
   }
 }
+
+.launch-panel {
+  margin-top: 13px;
+  padding: 16px 17px 13px;
+  border: 1px solid #2a3042;
+  border-radius: 5px;
+  background: linear-gradient(145deg, #121725 0%, #0e121c 100%);
+}
+
+.launch-heading-row {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.launch-heading-row p {
+  margin: 6px 0 0 25px;
+  color: #9298aa;
+  font-size: 10px;
+}
+
+.launch-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 9px;
+  margin: 13px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.launch-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+  border: 1px solid #2c3244;
+  border-radius: 4px;
+  padding: 11px;
+  background: #141a27;
+}
+
+.launch-card strong {
+  color: #e2deeb;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.launch-card > span:not(.launch-date):not(.launch-status) {
+  color: #b7bbca;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.launch-date {
+  color: #d7c5ff;
+  font-family: var(--mono);
+  font-size: 10px;
+}
+
+.launch-card small,
+.launch-status {
+  color: #8d94a8;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.launch-status {
+  align-self: start;
+  border: 1px solid #544a36;
+  border-radius: 3px;
+  padding: 3px 6px;
+  color: #ddbd7e;
+}
+
+.launch-card a,
+.launch-footnote a,
+.data-error a {
+  align-self: start;
+  color: #bdafea;
+  font-size: 10px;
+  text-decoration: none;
+}
+
+.launch-card a:hover,
+.launch-footnote a:hover,
+.data-error a:hover,
+.mission-media-links a:hover,
+.media-catalog-link:hover {
+  color: #f0e9ff;
+  text-decoration: underline;
+}
+
+.launch-footnote {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 7px 12px;
+  margin-top: 12px;
+  color: #858ca0;
+  font-size: 9px;
+}
+
+.launch-footnote a {
+  font-size: 9px;
+}
+
+.launch-panel .data-error button {
+  margin-top: 4px;
+}
+
+.mission-detail {
+  flex-wrap: wrap;
+}
+
+.mission-detail > div:not(.mission-media-links) {
+  flex: 1;
+}
+
+.mission-media-links {
+  display: flex;
+  flex-basis: 100%;
+  gap: 12px;
+  margin-left: 67px;
+}
+
+.mission-media-links a {
+  color: #b7a8e7;
+  font-size: 9px;
+  letter-spacing: .04em;
+  text-decoration: none;
+}
+
+.mission-animation {
+  margin-top: 9px;
+  border-top: 1px solid #252b3b;
+  padding-top: 7px;
+}
+
+.mission-animation svg {
+  display: block;
+  width: 100%;
+  height: 75px;
+  overflow: visible;
+}
+
+.mission-animation svg text {
+  fill: #858ca0;
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: .08em;
+}
+
+.mission-route {
+  fill: none;
+  stroke: #8e80b8;
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+}
+
+.mission-earth {
+  fill: #182b3c;
+  stroke: #82cfff;
+  stroke-width: 1.5;
+}
+
+.mission-moon {
+  fill: #5c5b64;
+  stroke: #d2c5e7;
+  stroke-width: 1.5;
+}
+
+.mission-vehicle {
+  fill: #ffe0a2;
+  filter: drop-shadow(0 0 4px #ffe0a2);
+}
+
+.mission-animation-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: #9298aa;
+  font-size: 8px;
+}
+
+.mission-animation-caption span:first-child {
+  color: #c4b8e4;
+}
+
+.archive-empty {
+  padding: 0 16px 16px;
+  color: #9298aa;
+  font-size: 11px;
+}
+
+.media-catalog-link {
+  color: #b7a8e7;
+  font-size: 9px;
+  letter-spacing: .05em;
+  text-decoration: none;
+}
+
+.header-status,
+.source-nav a,
+.globe-heading,
+.model-badge,
+.eyebrow,
+.mission-clock span,
+.mission-clock small,
+.globe-corner-label span,
+.globe-controls button span,
+.globe-caption,
+.globe-coordinate-line span,
+.descent-button,
+.trajectory-note,
+.panel-kicker,
+.field-label,
+.coordinate-form label > span,
+.apply-coordinates,
+.target-meta > span,
+.source-pill,
+.body-data > span,
+.angle-data small,
+.terrain-warning,
+.data-error,
+.site-data-row small,
+.small-error,
+.mission-notice,
+.epoch-picker label,
+.epoch-picker button,
+.ephemeris-legend,
+.chart-date,
+.chart-tick,
+.timeline-range-labels,
+.archive-panel summary > span,
+.archive-panel summary > strong,
+.archive-toolbar p,
+.archive-card small,
+.archive-card i,
+.archive-coordinate,
+.footer-sources,
+.footer-caveat {
+  font-size: 9px;
+}
+
+.brand small,
+.mission-clock small,
+.globe-corner-label span,
+.coordinate-form label > span,
+.site-data-row small,
+.footer-title small {
+  font-size: 8px;
+}
+
+.intro-row > div:first-child > p,
+.target-meta strong,
+.target-meta a,
+.body-data strong,
+.angle-data strong,
+.site-data-row > div > strong,
+.mission-detail strong,
+.mission-detail span,
+.mission-detail small,
+.mission-select-row select,
+.archive-toolbar input,
+.archive-card strong {
+  font-size: 11px;
+}
+
+@media (max-width: 600px) {
+  .launch-panel {
+    padding: 12px 10px;
+  }
+
+  .launch-list {
+    grid-template-columns: 1fr;
+  }
+
+  .launch-heading-row p {
+    margin-left: 0;
+    line-height: 1.5;
+  }
+
+  .launch-footnote {
+    flex-direction: column;
+  }
+
+  .mission-animation-caption {
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

@@ -1,16 +1,24 @@
-# React + Vite
+# LLSN-SKY_X — Lunar Landing Site Navigator
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+LLSN-SKY_X is a browser-based lunar site exploration prototype based on the supplied NASA Space Apps Challenge brief. It combines an interactive Moon, documented landing and CLPS targets, custom coordinates, JPL Sun/Earth observer geometry, LOLA elevation samples, a 30-day timeline, the 26 mission records in the supplied archive, and a live list of upcoming lunar launches.
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```sh
+npm install
+npm run dev
+```
 
-## React Compiler
+Keep network access available for the live data panels. The Vite development server proxies JPL Horizons, NASA Moon Trek, and Launch Library 2 requests. A production deployment must provide equivalent same-origin API routes; the Vite proxies are not included in the static build.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Sources and limits
 
-## Expanding the Oxlint configuration
+- Sun/Earth azimuth and elevation: JPL Horizons observer ephemerides for the selected lunar coordinates.
+- Elevation: NASA Moon Trek / LRO LOLA DEM point sample.
+- Lunar globe: NASA Moon Trek / LRO WAC mosaic.
+- Historical mission archive: 26 records transcribed from the supplied LLSN brief. Mission coordinates are shown only when matched to a cited NASA Moon Trek record.
+- Upcoming launch schedule: Launch Library 2. Dates are provider-reported NET estimates and may change; precision and status are displayed.
+- Mission route animations and descent paths are schematic, not reconstructed telemetry.
+- Geometric visibility is not terrain-corrected clearance. Regional volatile context is not a measured resource-abundance map. LLSN-SKY_X is not for flight or mission-critical decisions.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+`data/media-catalog.csv` lists remote NASA media search endpoints and selected source references. It does not download or bundle the linked media. Confirm item-level credits and usage terms before reuse.

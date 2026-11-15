@@ -1,10 +1,10 @@
-SELENE — PRESENTER AND DEMO GUIDE
+LLSN-SKY_X — PRESENTER AND DEMO GUIDE
 
 START
 1. Open a terminal in the project folder.
 2. Run: npm run dev
 3. Open the local URL printed by Vite (normally http://localhost:5173).
-4. Keep network access available. JPL Horizons and the NASA LOLA elevation sample are requested live through the Vite proxy.
+4. Keep network access available. JPL Horizons, NASA LOLA, and upcoming lunar launch schedules are requested live through the Vite proxy.
 
 LIVE DEMO FLOW
 1. Rotate the lunar globe by dragging. Scroll or pinch to zoom. Use Reset view to return to the overview.
@@ -15,6 +15,8 @@ LIVE DEMO FLOW
 6. Search the mission archive from the supplied LLSN brief. Mission records without a surface coordinate in the NASA layer remain unlocated; they are not assigned invented map pins.
 7. Press Animate descent to show the lander moving to the selected coordinate. This path is schematic and is not actual mission telemetry.
 8. Use the Moon Trek, LROC QuickMap, JPL Horizons, and CSA links for deeper source analysis.
+9. Review the upcoming lunar launches panel. Dates and precision come from Launch Library 2 and are estimates, not predictions.
+10. Select any mission to view its labeled schematic route and use the NASA media links. Download the media source CSV from the footer.
 
 CUSTOM COORDINATES
 Enter latitude and east-positive longitude in degrees. South latitudes are negative; west longitudes may be entered as negative values. Apply the coordinates before refreshing Horizons and LOLA.
@@ -26,14 +28,20 @@ DATA AND CONFIDENCE
 - Historic mission names/types/years: supplied LLSN mission document. Coordinates are shown only when matched to a NASA Moon Trek landing, impact, rover, or CLPS record.
 - Resource context: payload/mission objective only. The prototype does not report a measured water-ice abundance map.
 - Terrain clearance: geometric horizon values are not terrain-horizon clearance. A LOLA radial horizon extraction is still required.
+- Future launches: Launch Library 2 publishes NET schedule estimates. Dates can change and schedule precision/status are shown as supplied.
+- Mission route animations: schematic travel profiles aid exploration and are not reconstructed mission trajectories.
+- Media: `data/media-catalog.csv` links to NASA Image and Video Library searches and selected reference sources. Check the rights/credit notes for each item.
 
 TROUBLESHOOTING
 - If JPL shows an error, check network access and try Refresh ephemeris. The UI does not replace failed live requests with synthetic values.
 - If LOLA is unavailable, the elevation field reports unavailable; do not infer a zero elevation.
-- If the app is deployed as static files, configure a same-origin API proxy for /api/horizons.api and /api/moon-dem. The included proxy is for Vite development.
+- If the launch schedule is unavailable, retry the live schedule or use the Launch Library source link.
+- If the app is deployed as static files, configure equivalent same-origin API routes for JPL, Moon Trek, and Launch Library. The included proxies are for Vite development.
 
 SOURCE LINKS
 NASA Moon Trek: https://trek.nasa.gov/moon/
 LROC QuickMap: https://quickmap.lroc.im-ldi.com/
 JPL Horizons: https://ssd.jpl.nasa.gov/horizons/
+Launch Library 2: https://thespacedevs.com/llapi
+NASA Image and Video Library: https://images.nasa.gov/
 Canadian Space Agency Moon exploration: https://www.asc-csa.gc.ca/eng/astronomy/moon-exploration/

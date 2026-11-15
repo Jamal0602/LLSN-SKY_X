@@ -2,11 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import moonTextureUrl from '../data/source-image/nasa-lro-wac-global.png'
+import mediaCatalogUrl from '../data/media-catalog.csv?url'
 import { candidateSites, missionImages, missions } from './data/lunarData'
 import './App.css'
 
 const MOON_RADIUS_KM = 1737.4
 const PLANNING_HOURS = 720
+const launchSearchTerms = ['lunar', 'moon', 'artemis']
 const initialTarget = candidateSites.find((site) => site.id === 'shackleton-connecting-ridge')
 
 function utcInputValue(date) {
@@ -103,6 +105,126 @@ async function requestLolaElevation(target, signal) {
   const value = Number(result.value)
   if (!Number.isFinite(value)) throw new Error('NASA LOLA returned no elevation sample for this coordinate.')
   return { meters: value, layer }
+}
+
+async function requestUpcomingLaunches(signal) {
+  const responses = await Promise.all(launchSearchTerms.map((term) => (
+    fetch(`/api/launch-library/launch/upcoming/?limit=100&search=${encodeURIComponent(term)}`, { signal })
+  )))
+  const payloads = await Promise.all(responses.map(async (response) => {
+    if (!response.ok) throw new Error(`Launch Library request failed (${response.status}).`)
+    return response.json()
+  }))
+  const launches = payloads.flatMap((payload) => {
+    if (!Array.isArray(payload.results)) throw new Error('Launch Library returned an unexpected response.')
+    return payload.results
+  })
+  const uniqueLaunches = new Map(launches.map((launch) => [launch.id, launch]))
+  const now = Date.now()
+
+  return [...uniqueLaunches.values()]
+    .filter((launch) => {
+      const description = `${launch.name} ${launch.mission?.name || ''} ${launch.mission?.orbit?.name || ''}`.toLowerCase()
+      return launch.net && new Date(launch.net).getTime() >= now
+        && /moon|lunar|artemis/.test(description)
+    })
+    .sort((first, second) => new Date(first.net) - new Date(second.net))
+    .slice(0, 8)
+}
+
+function formatLaunchDate(launch) {
+  if (!launch.net) return 'Date not announced'
+  const date = new Date(launch.net)
+  const precision = launch.net_precision?.name || 'date precision not provided'
+  const options = { timeZone: 'UTC', year: 'numeric' }
+  if (precision === 'Year') return new Intl.DateTimeFormat('en', options).format(date)
+  options.month = 'short'
+  if (precision !== 'Month') options.day = 'numeric'
+  if (['Minute', 'Second'].includes(precision)) {
+    options.hour = '2-digit'
+    options.minute = '2-digit'
+    options.hour12 = false
+  }
+  return `${new Intl.DateTimeFormat('en', options).format(date)} · ${precision.toLowerCase()} precision`
+}
+
+function MissionAnimation({ mission }) {
+  const missionType = mission.type.toLowerCase()
+  const isFlyby = missionType.includes('flyby')
+  const isSampleReturn = missionType.includes('sample return')
+  const isLander = /lander|landing|rover/.test(missionType)
+  const path = isFlyby
+    ? 'M 28 48 C 110 6 190 6 272 48'
+    : isSampleReturn
+      ? 'M 28 48 C 105 15 202 20 258 47 C 207 88 104 82 28 48'
+      : isLander
+        ? 'M 28 48 C 113 12 203 13 250 42 L 272 60'
+        : 'M 28 48 C 108 12 216 12 252 44 C 232 76 274 82 278 48'
+  const routeLabel = isFlyby ? 'Flyby profile' : isSampleReturn ? 'Sample-return profile' : isLander ? 'Landing profile' : 'Orbital profile'
+
+  return (
+    <div className="mission-animation">
+      <svg viewBox="0 0 300 96" role="img" aria-label={`${mission.name}: illustrative ${routeLabel.toLowerCase()}, not actual mission telemetry`}>
+        <path className="mission-route" d={path} />
+        <circle className="mission-earth" cx="28" cy="48" r="13" />
+        <circle className="mission-moon" cx="274" cy="48" r="16" />
+        <circle className="mission-vehicle" r="3.5">
+          <animateMotion dur="6s" repeatCount="indefinite" path={path} />
+        </circle>
+        <text x="28" y="87" textAnchor="middle">EARTH</text>
+        <text x="274" y="87" textAnchor="middle">MOON</text>
+      </svg>
+      <div className="mission-animation-caption">
+        <span>{routeLabel} · not to scale</span>
+        <span>Illustrative only; not reconstructed telemetry.</span>
+      </div>
+    </div>
+  )
+}
+
+function LaunchForecast({ launches, status, error, checkedAt, onRetry }) {
+  return (
+    <section className="launch-panel" aria-labelledby="launch-heading">
+      <div className="launch-heading-row">
+        <div>
+          <div className="panel-kicker"><span>06</span> UPCOMING LUNAR LAUNCHES</div>
+          <p id="launch-heading">Public launch schedule · provider estimates, not predictions</p>
+        </div>
+        <span className={`source-pill ${status}`}>{status === 'live' ? 'LIVE FEED' : status.toUpperCase()}</span>
+      </div>
+      {status === 'loading' && <div className="chart-placeholder">Checking public launch schedules…</div>}
+      {status === 'error' && (
+        <div className="data-error" role="alert">
+          <strong>Launch schedule unavailable</strong>
+          <span>{error}</span>
+          <button onClick={onRetry}>RETRY LIVE SCHEDULE</button>
+          <a href="https://thespacedevs.com/llapi" target="_blank" rel="noreferrer">Open Launch Library ↗</a>
+        </div>
+      )}
+      {status === 'live' && launches.length === 0 && (
+        <div className="chart-placeholder">No future lunar launches are currently listed by the schedule provider.</div>
+      )}
+      {status === 'live' && launches.length > 0 && (
+        <ul className="launch-list">
+          {launches.map((launch) => (
+            <li className="launch-card" key={launch.id}>
+              <span className="launch-date">{formatLaunchDate(launch)}</span>
+              <strong>{launch.rocket?.configuration?.full_name || launch.name}</strong>
+              <span>{launch.mission?.name || 'Mission details not listed'}</span>
+              <small>{launch.launch_service_provider?.name || 'Provider not listed'} · {launch.pad?.location?.name || 'Launch site not listed'}</small>
+              <span className="launch-status">{launch.status?.name || 'Status not provided'}</span>
+              {launch.url && <a href={launch.url} target="_blank" rel="noreferrer">Schedule details ↗</a>}
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="launch-footnote">
+        <span>Dates may move; precision and status are reported by the provider.</span>
+        {checkedAt && <span>Updated {formatUtc(checkedAt)} UTC</span>}
+        <a href="https://ll.thespacedevs.com/2.2.0/" target="_blank" rel="noreferrer">Launch Library 2 ↗</a>
+      </div>
+    </section>
+  )
 }
 
 function coordinateVector(latitude, longitude) {
@@ -437,7 +559,9 @@ function App() {
   const [missionNotice, setMissionNotice] = useState('')
   const [landingRun, setLandingRun] = useState(0)
   const [landingStatus, setLandingStatus] = useState('')
-  const [isAutoRotate, setIsAutoRotate] = useState(true)
+  const [isAutoRotate, setIsAutoRotate] = useState(() => !window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+  const [launchFeed, setLaunchFeed] = useState({ status: 'loading', launches: [], error: '', checkedAt: null })
+  const [launchRefreshId, setLaunchRefreshId] = useState(0)
   const descentTimeout = useRef(0)
   const resetViewRef = useRef(null)
 
@@ -497,6 +621,20 @@ function App() {
 
     return () => controller.abort()
   }, [target, startTime, refreshId, requestKey])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    requestUpcomingLaunches(controller.signal).then((launches) => {
+      if (!controller.signal.aborted) {
+        setLaunchFeed({ status: 'live', launches, error: '', checkedAt: new Date() })
+      }
+    }).catch((error) => {
+      if (!controller.signal.aborted) {
+        setLaunchFeed({ status: 'error', launches: [], error: error.message, checkedAt: null })
+      }
+    })
+    return () => controller.abort()
+  }, [launchRefreshId])
 
   useEffect(() => {
     if (!playing || ephemerisStatus !== 'live') return undefined
@@ -570,9 +708,9 @@ function App() {
   return (
     <main className="app-shell">
       <header className="topbar">
-        <a className="brand" href="#" aria-label="SELENE home">
+        <a className="brand" href="#" aria-label="LLSN-SKY_X home">
           <span className="brand-symbol"><i /><i /><i /></span>
-          <span><strong>SELENE</strong><small>LUNAR LANDING SITE NAVIGATOR</small></span>
+          <span><strong>LLSN-SKY_X</strong><small>LUNAR LANDING SITE NAVIGATOR</small></span>
         </a>
         <div className="header-status">
           <span className={`service-indicator ${ephemerisStatus}`} />
@@ -707,19 +845,32 @@ function App() {
                 <option value="">Select a mission from the supplied brief</option>
                 {missions.map((mission) => <option key={mission.id} value={mission.id}>{mission.year} · {mission.name}</option>)}
               </select>
-              <span className="archive-count">26</span>
+              <span className="archive-count">{missions.length}</span>
             </div>
             {selectedMission && (
               <div className="mission-detail">
                 {selectedMission.image && missionImages[selectedMission.image] && <img src={missionImages[selectedMission.image]} alt={`${selectedMission.name} lunar surface photograph`} />}
                 <div><strong>{selectedMission.name}</strong><span>{selectedMission.year} · {selectedMission.agency}</span><small>{selectedMission.type}</small></div>
                 {Number.isFinite(selectedMission.lat) && <button onClick={() => chooseMission(selectedMission)}>FOCUS ↗</button>}
+                <div className="mission-media-links">
+                  <a href={`https://images.nasa.gov/search?q=${encodeURIComponent(selectedMission.name)}`} target="_blank" rel="noreferrer">IMAGES ↗</a>
+                  <a href={`https://images.nasa.gov/search?q=${encodeURIComponent(`${selectedMission.name} animation`)}`} target="_blank" rel="noreferrer">VIDEOS & ANIMATIONS ↗</a>
+                </div>
               </div>
             )}
+            {selectedMission && <MissionAnimation mission={selectedMission} />}
             {missionNotice && <p className="mission-notice">{missionNotice}</p>}
           </section>
         </aside>
       </section>
+
+      <LaunchForecast
+        launches={launchFeed.launches}
+        status={launchFeed.status}
+        error={launchFeed.error}
+        checkedAt={launchFeed.checkedAt}
+        onRetry={() => setLaunchRefreshId((id) => id + 1)}
+      />
 
       <section className="timeline-panel">
         <div className="timeline-header">
@@ -758,8 +909,8 @@ function App() {
         <div className="timeline-range-labels"><span>{formatUtc(parseUtcInput(startTime))}</span><span>{formatUtc(new Date(parseUtcInput(startTime).getTime() + 10 * 24 * 3600000))}</span><span>{formatUtc(new Date(parseUtcInput(startTime).getTime() + 20 * 24 * 3600000))}</span><span>+30 DAYS</span></div>
       </section>
 
-      <details className="archive-panel">
-        <summary><span><i>06</i> MISSION ARCHIVE FROM LLSN BRIEF</span><strong>26 records <b>⌄</b></strong></summary>
+      <details className="archive-panel" open>
+        <summary><span><i>07</i> MISSION ARCHIVE FROM LLSN BRIEF</span><strong>{missions.length} records <b>⌄</b></strong></summary>
         <div className="archive-toolbar">
           <p>Names, years, agencies, and types are transcribed from <em>LLSN - SKY_X (2).pdf</em>. Coordinates are included only when matched to a NASA Moon Trek landing, impact, rover, or CLPS record.</p>
           <label><span className="visually-hidden">Filter missions</span><input value={missionSearch} onChange={(event) => setMissionSearch(event.target.value)} placeholder="Filter mission, agency, year…" /></label>
@@ -773,12 +924,14 @@ function App() {
             </button>
           ))}
         </div>
+        {filteredMissions.length === 0 && <p className="archive-empty">No missions match that search. Try another name, agency, or year.</p>}
       </details>
 
       <footer className="footer">
-        <div className="footer-title"><span className="footer-sigil">S</span><span>SELENE<small>LUNAR SITE INTELLIGENCE</small></span></div>
+        <div className="footer-title"><span className="footer-sigil">L</span><span>LLSN-SKY_X<small>LUNAR SITE INTELLIGENCE</small></span></div>
         <div className="footer-sources">LRO WAC · LOLA DEM · JPL HORIZONS DE441 · LLSN MISSION BRIEF</div>
         <span className="footer-caveat">PLANNING PREVIEW · NOT FOR FLIGHT</span>
+        <a className="media-catalog-link" href={mediaCatalogUrl} download="llsn-sky_x-media-catalog.csv">MEDIA & ANIMATION LINKS · CSV ↗</a>
       </footer>
     </main>
   )

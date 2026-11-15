@@ -4,7 +4,7 @@ NASA Space Apps Challenge — 5-minute pitch
 SLIDE 1 — A MAP THAT THINKS IN TIME
 Visual: the rotating lunar globe with a highlighted landing site.
 Speaker:
-"SELENE turns lunar site selection into a shared, visual planning task. Rotate the Moon, choose a documented landing or CLPS target, and see the Sun and Earth from that exact lunar location and time."
+"LLSN-SKY_X turns lunar site selection into a shared, visual planning task. Rotate the Moon, choose a documented landing or CLPS target, and see the Sun and Earth from that exact lunar location and time."
 
 SLIDE 2 — WHY THE SOUTH POLE IS HARD
 Visual: south-pole terrain, low Sun angle, and Earth visibility indicators.
@@ -24,10 +24,10 @@ Speaker:
 SLIDE 5 — WHAT WE WILL VALIDATE NEXT
 Visual: terrain and resources callouts with confidence labels.
 Speaker:
-"SELENE separates measured data from planning context. LOLA elevation is a real sampled value; potential polar volatiles are a science objective, not a measured abundance in this prototype. The next validation step is a DEM-derived local horizon and a sourced resource layer before any mission-grade clearance claim."
+"LLSN-SKY_X separates measured data from planning context. LOLA elevation is a real sampled value; potential polar volatiles are a science objective, not a measured abundance in this prototype. The next validation step is a DEM-derived local horizon and a sourced resource layer before any mission-grade clearance claim."
 
 DEMO CLOSE
-"SELENE makes the data easier to compare without hiding where it came from—or where uncertainty remains."
+"LLSN-SKY_X makes the data easier to compare without hiding where it came from—or where uncertainty remains."
 
 PRESENTATION NOTE
 The live Horizons and Moon Trek requests use the local Vite development proxy. A deployed build needs an equivalent same-origin server/API proxy. The descent path is illustrative. This prototype is not for flight or mission-critical decisions.

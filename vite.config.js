@@ -17,6 +17,12 @@ export default defineConfig({
         secure: true,
         rewrite: (path) => path.replace(/^\/api\/moon-dem/, ''),
       },
+      '/api/launch-library': {
+        target: 'https://ll.thespacedevs.com/2.2.0',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (path) => path.replace(/^\/api\/launch-library/, ''),
+      },
     },
   },
 })
